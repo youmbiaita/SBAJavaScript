@@ -77,8 +77,24 @@ const CourseInfo = {
     }
   ];
   
-  function getLearnerData(course, ag, submissions) {
-    // here, we would process this data to achieve the desired result.
+  function getLearnerData(courseInfo, AssignmentGroup, LearnerSubmissions) {
+    if( CourseInfo.id !== AssignmentGroup.course_id) {
+      throw new Error("AssignementGroup does not belong to the course.");
+    }
+
+    // calculate weighted average score for  a learner
+    function calculateWeightedAverage(scores, totalPoints) {
+      let sum = 0;
+      for (let assignmentId in scores) {
+          sum += (scores[assignmentId] / 100) * totalPoints[assignmentId];
+      }
+      return (sum / Object.keys(scores).length) * 100;
+  }
+// check if assignemnt is past due
+  function isPastDue(assignemntDueDate) {
+    return new Date() > new Date(assignemntDueDate);
+  }
+  
     const result = [
       {
         id: 125,
