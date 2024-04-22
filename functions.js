@@ -95,6 +95,32 @@ const CourseInfo = {
     return new Date() > new Date(assignemntDueDate);
   }
   
+  // Learner Submissions
+  const learnerData = [];
+    for (const submission of learnerSubmissions) {
+        const learnerId = submission.learner_id;
+        const learnerSubData = { id: learnerId, avg: 0 };
+        const scores = {};
+
+        for (const assignment of assignmentGroup.assignments) {
+          if (assignment.course_id !== courseInfo.id) {
+              throw new Error("AssignmentGroup does not belong to the provided course.");
+          }
+
+          if (assignment.points_possible === 0) {
+              console.error(`Assignment ${assignment.id} has points_possible set to 0.`);
+              continue;
+          }
+
+          if (!Number.isFinite(submission.submission.score)) {
+              console.error(`Invalid score for assignment ${assignment.id}. Expected a number.`);
+              continue;
+          }
+
+          if (!isPastDue(assignment.due_at)) {
+              continue;
+          }
+        }
     const result = [
       {
         id: 125,
@@ -116,4 +142,5 @@ const CourseInfo = {
   const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
   
   console.log(result);
+}
   
