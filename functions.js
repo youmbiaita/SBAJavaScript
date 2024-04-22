@@ -78,69 +78,63 @@ const CourseInfo = {
   ];
   
   function getLearnerData(courseInfo, AssignmentGroup, LearnerSubmissions) {
+    const result = [];
+    let learnerData = {};
     if( CourseInfo.id !== AssignmentGroup.course_id) {
       throw new Error("AssignementGroup does not belong to the course.");
     }
+    // process learner submissions
+    for(let submission of LearnerSubmissions ) {
+      let learnerId = submission.learner_id;
+      let learnerSubData = {id: learnerId, avg: 0} // this object holds data for specific learner
+      let scores = [] //array for all scores of learner
 
-    // calculate weighted average score for  a learner
+      for (let assignment of AssignmentGroup.assignments) {
+        if(assignment.course_id !== courseInfo.id){
+          throw new Error("The assignmentGroup does not belong to the provided course");
+        }
+        if(assignment.points_possible === 0){
+          console.error(`Assignment ${assignment.id} has 0point.`);
+          continue;
+        }
+        // Validate data process to ensure that the score provided by learner are valid number preventing errors
+
+        if(!Number.isFinite(submission.submission.score)){
+          console.error(`Invalid score for assignment ${assignment.id}.`);
+          continue;
+        }
+
+        // Check if the assignment is still due or not
+        if(!isPastDue(assignment.due_at)) {
+          continue;
+        }
+
+        //Using try and catch for penalty
+        let latePenalty = 0;
+        try {
+          if (submission.submission.submitted_at > assignment.due_at){
+            latePenalty = 0.1 // 10% of penalty
+          }
+        }catch (error){
+          console.error(`Error  while processing submission date for assignment ${assignment.id}:`, error.message);
+        }
+        let score = (submission.submission.score / assignment.points_possible) * (1 - latePenalty) * 100;
+        score = scores[assignment.id];
+      }
+
+      // Helper function to calculate weighted average score for a learner
     function calculateWeightedAverage(scores, totalPoints) {
       let sum = 0;
-      for (let assignmentId in scores) {
+      for (const assignmentId in scores) {
           sum += (scores[assignmentId] / 100) * totalPoints[assignmentId];
       }
       return (sum / Object.keys(scores).length) * 100;
   }
-// check if assignemnt is past due
-  function isPastDue(assignemntDueDate) {
-    return new Date() > new Date(assignemntDueDate);
-  }
-  
-  // Learner Submissions
-  const learnerData = [];
-    for (const submission of learnerSubmissions) {
-        const learnerId = submission.learner_id;
-        const learnerSubData = { id: learnerId, avg: 0 };
-        const scores = {};
-
-        for (const assignment of assignmentGroup.assignments) {
-          if (assignment.course_id !== courseInfo.id) {
-              throw new Error("AssignmentGroup does not belong to the provided course.");
-          }
-
-          if (assignment.points_possible === 0) {
-              console.error(`Assignment ${assignment.id} has points_possible set to 0.`);
-              continue;
-          }
-
-          if (!Number.isFinite(submission.submission.score)) {
-              console.error(`Invalid score for assignment ${assignment.id}. Expected a number.`);
-              continue;
-          }
-
-          if (!isPastDue(assignment.due_at)) {
-              continue;
-          }
-        }
-    const result = [
-      {
-        id: 125,
-        avg: 0.985, // (47 + 150) / (50 + 150)
-        1: 0.94, // 47 / 50
-        2: 1.0 // 150 / 150
-      },
-      {
-        id: 132,
-        avg: 0.82, // (39 + 125) / (50 + 150)
-        1: 0.78, // 39 / 50
-        2: 0.833 // late: (140 - 15) / 150
-      }
-    ];
-  
+   
     return result;
   }
-  
-  const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
-  
-  console.log(result);
 }
+
+  result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
   
+  console.log(result)
