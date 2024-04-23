@@ -77,64 +77,174 @@ const CourseInfo = {
     }
   ];
   
-  function getLearnerData(courseInfo, AssignmentGroup, LearnerSubmissions) {
-    const result = [];
-    let learnerData = {};
-    if( CourseInfo.id !== AssignmentGroup.course_id) {
-      throw new Error("AssignementGroup does not belong to the course.");
-    }
-    // process learner submissions
-    for(let submission of LearnerSubmissions ) {
-      let learnerId = submission.learner_id;
-      let learnerSubData = {id: learnerId, avg: 0} // this object holds data for specific learner
-      let scores = [] //array for all scores of learner
+//   function getLearnerData(courseInfo, AssignmentGroup, LearnerSubmissions) {
+//     const result = [];
+//     let learnerData = {};
+//     if( CourseInfo.id !== AssignmentGroup.course_id) {
+//       throw new Error("AssignementGroup does not belong to the course.");
+//     }
+//     // process learner submissions
+//     for(let submission of LearnerSubmissions ) {
+//       let learnerId = submission.learner_id;
+//       let learnerSubData = {id: learnerId, avg: 0} // this object holds data for specific learner
+//       let scores = [] //array for all scores of learner
 
-      for (let assignment of AssignmentGroup.assignments) {
-        if(assignment.course_id !== courseInfo.id){
-          throw new Error("The assignmentGroup does not belong to the provided course");
-        }
-        if(assignment.points_possible === 0){
-          console.error(`Assignment ${assignment.id} has 0point.`);
-          continue;
-        }
-        // Validate data process to ensure that the score provided by learner are valid number preventing errors
+//       for (let assignment of AssignmentGroup.assignments) {
+//         if(assignment.course_id !== courseInfo.id){
+//           throw new Error("The assignmentGroup does not belong to the provided course");
+//         }
+//         if(assignment.points_possible === 0){
+//           console.error(`Assignment ${assignment.id} has 0point.`);
+//           continue;
+//         }
+//         // Validate data process to ensure that the score provided by learner are valid number preventing errors
 
-        if(!Number.isFinite(submission.submission.score)){
-          console.error(`Invalid score for assignment ${assignment.id}.`);
-          continue;
-        }
+//         if(!Number.isFinite(submission.submission.score)){
+//           console.error(`Invalid score for assignment ${assignment.id}.`);
+//           continue;
+//         }
 
-        // Check if the assignment is still due or not
-        if(!isPastDue(assignment.due_at)) {
-          continue;
-        }
+//         // Check if the assignment is still due or not
+//         if(!isPastDue(assignment.due_at)) {
+//           continue;
+//         }
 
-        //Using try and catch for penalty
-        let latePenalty = 0;
-        try {
-          if (submission.submission.submitted_at > assignment.due_at){
-            latePenalty = 0.1 // 10% of penalty
-          }
-        }catch (error){
-          console.error(`Error  while processing submission date for assignment ${assignment.id}:`, error.message);
-        }
-        let score = (submission.submission.score / assignment.points_possible) * (1 - latePenalty) * 100;
-        score = scores[assignment.id];
-      }
+//         //Using try and catch for penalty
+//         let latePenalty = 0;
+//         try {
+//           if (submission.submission.submitted_at > assignment.due_at){
+//             latePenalty = 0.1 // 10% of penalty
+//           }
+//         }catch (error){
+//           console.error(`Error  while processing submission date for assignment ${assignment.id}:`, error.message);
+//         }
+//         let score = (submission.submission.score / assignment.points_possible) * (1 - latePenalty) * 100;
+//         score = scores[assignment.id];
+//       }
 
-      // Helper function to calculate weighted average score for a learner
-    function calculateWeightedAverage(scores, totalPoints) {
-      let sum = 0;
-      for (const assignmentId in scores) {
-          sum += (scores[assignmentId] / 100) * totalPoints[assignmentId];
-      }
-      return (sum / Object.keys(scores).length) * 100;
-  }
+//       // Helper function to calculate weighted average score for a learner
+//     function calculateWeightedAverage(scores, totalPoints) {
+//       let sum = 0;
+//       for (const assignmentId in scores) {
+//           sum += (scores[assignmentId] / 100) * totalPoints[assignmentId];
+//       }
+//       return (sum / Object.keys(scores).length) * 100;
+//     }
+
+//     // Calculate weighted average
+//     learnerSubData.avg = calculateWeightedAverage(scores, assignmentGroup.assignments.reduce((acc, curr) => {
+//       acc[curr.id] = curr.points_possible;
+//       return acc;
+//   }, {}));
+
+//   // Assign scores to assignments
+//   Object.assign(learnerSubData, scores);
+
+//   result.push(learnerSubData);
+//   }
    
-    return result;
+//     return result;
+// }
+
+//   result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
+  
+//   console.log(result)
+
+// Function to calculate the average score and individual assignment scores for each learner
+function getLearnerData(course, assignmentGroup, submissions) {
+  // Validate if AssignmentGroup belongs to its course
+  if (assignmentGroup.course_id !== course.id) {
+    throw new Error("Invalid input: AssignmentGroup does not belong to the provided course.");
   }
+
+  const result = [];
+
+  // Loop through learner submissions
+  for (const submission of submissions) {
+    const learnerID = submission.learner_id;
+    const assignmentID = submission.assignment_id;
+    const assignment = assignmentGroup.assignments.find(assignment => assignment.id === assignmentID);
+
+    if (!assignment) {
+      console.log(`Error with learner ID ${learnerID} has an invalid assignment ID ${assignmentID}. Skipping.`);
+      continue; // Skip this submission and move to the next one
+    }
+
+    const dueDate = new Date(assignment.due_at);
+    const submittedDate = new Date(submission.submission.submitted_at);
+
+    // Check if assignment is not yet due
+    if (submittedDate < dueDate) {
+      console.log(`Assignment ${assignment.name} for learner ID ${learnerID} is not yet due.`);
+      continue; // Skip this assignment and move to the next one because it is continue
+    }
+
+    // Calculate late penalty which is 10%
+    let millisecondsPerDay = 1000 * 60 * 60 * 24;
+    let differenceInMilliseconds = submittedDate.getTime() - dueDate.getTime();
+    let daysLate = Math.ceil(differenceInMilliseconds / millisecondsPerDay);
+    let latePenalty;
+    if (daysLate > 0) {
+      latePenalty = assignment.points_possible * 0.1;
+    }else{
+      latePenalty = 0;
+    }  
+
+    let score = submission.submission.score;
+
+    // Apply late penalty
+    score -= latePenalty;
+
+    // Ensure score is not negative
+    if (score < 0) {
+      score = 0;
+  }
+
+    // Calculate percentage
+    const percentage = score / assignment.points_possible;
+
+    // Find existing learner data or create new
+    // const existingDataIndex = result.findIndex(item => item.id === learnerID);
+    // if (existingDataIndex !== -1) {
+    //   result[existingDataIndex][assignmentID] = percentage;
+    //   result[existingDataIndex].avg += percentage;
+    // } else {
+    //   const newData = {
+    //     id: learnerID,
+    //     avg: percentage,
+    //     [assignmentID]: percentage
+    //   };
+    //   result.push(newData);
+    // }
+
+    const existingDataIndex = result.findIndex(item => item.id === learnerID);
+
+    if (existingDataIndex !== -1) {
+      result[existingDataIndex][assignmentID] = percentage;
+      result[existingDataIndex].avg += percentage;
+    } else {
+      const newData = {
+        id: learnerID,
+        avg: percentage,
+        [assignmentID]: percentage
+      };
+      result.push(newData);
+    }
+
+  }
+
+  // Calculate average for each learner
+  for (let data of result) {
+    data.avg /= Object.keys(data).length - 1; // Exclude 'id' property
+  }
+
+  return result;
 }
 
-  result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
-  
-  console.log(result)
+// Execute the function and catch any errors
+try {
+  const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
+  console.log(result);
+} catch (error) {
+  console.error(error.message);
+}
