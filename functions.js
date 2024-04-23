@@ -108,14 +108,8 @@ function getLearnerData(course, assignmentGroup, submissions) {
     }
 
     // Calculate late penalty which is 10%
-    let latePenalty = 0;
-            try {
-                if (submission.submission.submitted_at > assignment.due_at) {
-                    latePenalty = 0.1 * assignment.points_possible;
-                }
-            } catch (error) {
-                console.error(`Error occurred while processing submission date for assignment ${assignment.id}:`, error.message);
-            } 
+    const daysLate = Math.ceil((submittedDate - dueDate) / (1000 * 60 * 60 * 24));
+    const latePenalty = daysLate > 0 ? 0.1 * assignment.points_possible : 0;
 
     let score = submission.submission.score;
 
@@ -148,19 +142,9 @@ function getLearnerData(course, assignmentGroup, submissions) {
   }
 
   // Calculate average for each learner
-  for (let i = 0; i < result.length; i++) {
-    const data = result[i];
-    const keys = Object.keys(data);
-    let sum = 0;
-    let count = 0;
-    for (let j = 0; j < keys.length; j++) {
-      if (keys[j] !== 'id') {
-        sum += data[keys[j]];
-        count++;
-      }
-    }
-    data.avg = sum / count;
-  }
+for (let data of result) {
+    data.avg /= Object.keys(data).length - 1; // Exclude 'id' property
+  }       
 
   return result;
 }
