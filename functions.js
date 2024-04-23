@@ -148,8 +148,18 @@ function getLearnerData(course, assignmentGroup, submissions) {
   }
 
   // Calculate average for each learner
-  for (let data of result) {
-    data.avg /= Object.keys(data).length - 1; // Exclude 'id' property
+  for (let i = 0; i < result.length; i++) {
+    const data = result[i];
+    const keys = Object.keys(data);
+    let sum = 0;
+    let count = 0;
+    for (let j = 0; j < keys.length; j++) {
+      if (keys[j] !== 'id') {
+        sum += data[keys[j]];
+        count++;
+      }
+    }
+    data.avg = sum / count;
   }
 
   return result;
